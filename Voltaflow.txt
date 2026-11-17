@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoltFlow — Smart Energy Bill Forecaster</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-cream: #FAF8F5;
+      --card-white: #FFFFFF;
+      --coral-primary: #FF6B5B;
+      --coral-soft: #FFF0EE;
+      --blue-electric: #2B7FFF;
+      --blue-soft: #EDF4FF;
+      --ink-charcoal: #1C1D22;
+      --ink-slate: #6E717C;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at 20% 15%, #F2EDE4 0%, #E7E1D6 100%);
+      color: var(--ink-charcoal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    @media (min-width: 480px) {
+      body {
+        padding: 16px;
+      }
+    }
+
+    h1, h2, h3, .font-display {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Mobile App Viewport Container */
+    .mobile-shell {
+      width: 100%;
+      max-width: 420px;
+      min-height: 100vh;
+      background-color: var(--bg-cream);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-x: hidden;
+    }
+
+    @media (min-width: 480px) {
+      .mobile-shell {
+        min-height: 830px;
+        max-height: 880px;
+        border-radius: 36px;
+        border: 6px solid #FFFFFF;
+        box-shadow:
+          0 25px 60px -15px rgba(28, 29, 34, 0.16),
+          0 4px 16px -4px rgba(28, 29, 34, 0.06);
+      }
+    }
+
+    /* Elevated Crisp White Card */
+    .wellness-card {
+      background: var(--card-white);
+      border-radius: 24px;
+      box-shadow:
+        0 10px 28px -8px rgba(28, 29, 34, 0.05),
+        0 2px 6px -1px rgba(28, 29, 34, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+    }
+
+    /* Interactive Press Micro-interaction */
+    .tap-scale {
+      transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .tap-scale:active {
+      transform: scale(0.96);
+    }
+
+    /* Circular SVG Ring Smooth Transition */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Electric Blue Bar Capsule Animation */
+    .bar-fill {
+      transition: height 0.55s cubic-bezier(0.22, 1, 0.36, 1), background 0.25s ease, transform 0.2s ease;
+    }
+
+    /* Subtle Bolt Pulse */
+    @keyframes boltPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+    .bolt-active {
+      animation: boltPulse 2s ease-in-out infinite;
+    }
+
+    /* Celebratory Toast Pop */
+    @keyframes popIn {
+      0% { opacity: 0; transform: translate(-50%, 10px) scale(0.92); }
+      100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    }
+    .toast-pop {
+      animation: popIn 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Bottom Sheet Slide Up */
+    @keyframes sheetUp {
+      0% { transform: translateY(100%); opacity: 0.5; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .sheet-animate {
+      animation: sheetUp 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* Floating Glass Dock */
+    .floating-dock {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow:
+        0 14px 32px -6px rgba(28, 29, 34, 0.12),
+        0 2px 8px -2px rgba(28, 29, 34, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Viewport App Frame -->
+  <main class="mobile-shell px-4 pt-4 pb-3.5">
+
+    <!-- Floating Micro-Feedback Toast -->
+    <div id="feedbackToast" class="hidden fixed sm:absolute top-3.5 left-1/2 -translate-x-1/2 z-50 bg-[#1C1D22] text-white text-xs font-medium px-3.5 py-2 rounded-full shadow-lg flex items-center gap-2 whitespace-nowrap">
+      <span class="w-2 h-2 rounded-full bg-[#FF6B5B]"></span>
+      <span id="toastMessage">Synced with Google Sheets!</span>
+    </div>
+
+    <!-- Top Content Wrapper -->
+    <div class="flex flex-col gap-3">
+
+      <!-- 1. TOP HEADER & GOOGLE SHEETS SYNC BAR -->
+      <header class="flex flex-col gap-2.5">
+        <!-- App Title + Billing Cycle Badge + Google Sheets Pill -->
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5">
+              <div class="w-6 h-6 rounded-lg bg-[#FF6B5B] text-white flex items-center justify-center shadow-xs shadow-[#FF6B5B]/30">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>
+                </svg>
+              </div>
+              <h1 class="font-display text-lg font-extrabold tracking-tight text-[#1C1D22] leading-none">
+                VoltFlow
+              </h1>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF0EE] text-[#FF6B5B]">
+                Nov · Day <span id="cycleDayText">16</span>/30
+              </span>
+            </div>
+            <p class="text-[11px] font-medium text-[#6E717C] mt-1 flex items-center gap-1.5">
+              <span id="syncDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="syncStatusText">Google Sheet · Synced 2m ago</span>
+            </p>
+          </div>
+
+          <!-- Google Sheets Sync Trigger Pill -->
+          <div class="flex items-center gap-1.5">
+            <button
+              onclick="triggerQuickSync()"
+              title="Sync Now"
+              class="tap-scale w-8 h-8 rounded-full bg-white border border-black/[0.05] shadow-xs flex items-center justify-center text-[#2B7FFF] hover:bg-[#EDF4FF]"
+            >
+              <svg id="syncSpinIcon" class="w-3.5 h-3.5 transition-transform duration-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+            <button
+              onclick="openSheetModal()"
+              class="tap-scale bg-white hover:bg-[#EDF4FF] text-[#1C1D22] border border-black/[0.05] px-2.5 py-1.5 rounded-full shadow-xs flex items-center gap-1.5 text-[11px] font-bold"
+            >
+              <svg class="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 14H6v-3h5v3zm0-5H6V9h5v3zm7 5h-5v-3h5v3zm0-5h-5V9h5v3z"/>
+              </svg>
+              <span>Sheet</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. COMPACT WEEKLY ENERGY SUMMARY STRIP -->
+        <section class="wellness-card px-3 py-2.5">
+          <div class="flex items-center justify-between mb-2 px-1">
+            <span class="text-[11px] font-semibold text-[#6E717C]">Weekly Energy Log</span>
+            <span class="text-[11px] font-bold text-[#2B7FFF]" id="weeklySummaryMetric">
+              63.4 kWh this wk • Pune LT-1
+            </span>
+          </div>
+
+          <!-- 7-Day Selector Pills -->
+          <div id="daySelectorRow" class="grid grid-cols-7 gap-1.5">
+            <!-- Rendered via JS -->
+          </div>
+        </section>
+      </header>
+
+      <!-- 3. HERO BENTO ROW: UNITS & BUDGET RING (LEFT) + ECO-SAVING STREAK (RIGHT) -->
+      <section class="grid grid-cols-12 gap-3 items-stretch">
+
+        <!-- Left Main Card: Monthly Safe-Slab Units Ring & Accrued Bill -->
+        <div class="col-span-7 wellness-card p-3.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-[#1C1D22]">Slab Budget</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF0EE] text-[#FF6B5B]" id="slabBudgetPct">
+              66%
+            </span>
+          </div>
+
+          <!-- Circular Ring Progress -->
+          <div class="relative flex items-center justify-center my-1.5">
+            <svg class="w-32 h-32" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="coralGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FF8A7A" />
+                  <stop offset="100%" stop-color="#FF5542" />
+                </linearGradient>
+              </defs>
+              <!-- Background Track -->
+              <circle
+                cx="60"
+                cy="60"
+                r="48"
+                fill="none"
+                stroke="#F3EFEA"
+                stroke-width="11"
+              />
+              <!-- Animated Coral Progress Arc -->
+              <circle
+                id="unitsRingArc"
+                class="progress-ring-circle"
+                cx="60"
+                cy="60"
+                r="48"
+                fill="none"
+                stroke="url(#coralGrad)"
+                stroke-width="11"
+                stroke-linecap="round"
+                stroke-dasharray="301.59"
+                stroke-dashoffset="102.5"
+              />
+            </svg>
+
+            <!-- Center Accrued kWh Readout -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span id="accruedUnitsText" class="font-display text-2xl font-extrabold text-[#1C1D22] leading-none">
+                198
+              </span>
+              <span class="text-[10px] font-medium text-[#6E717C] mt-1">
+                of <span id="safeLimitUnitsText">300</span> kWh
+              </span>
+              <span id="accruedBillBadge" class="text-[10px] font-extrabold text-[#FF6B5B] mt-0.5">
+                ₹2,044 so far
+              </span>
+            </div>
+          </div>
+
+          <!-- Accrued vs Projected Split + Quick +2 kWh Test Log -->
+          <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
+            <div class="text-[10px] leading-tight">
+              <span class="text-[#6E717C] block">30d Forecast</span>
+              <span class="font-bold text-[#1C1D22]" id="miniProjectedBill">₹4,380</span>
+            </div>
+            <button
+              onclick="logTestUnits()"
+              class="tap-scale bg-[#FF6B5B] hover:bg-[#f85c4b] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-sm shadow-[#FF6B5B]/30 flex items-center gap-1"
+            >
+              <span>+2 kWh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Stacked Column: Eco-Saving Streak & Slab Guard -->
+        <div class="col-span-5 wellness-card p-3.5 flex flex-col justify-between relative overflow-hidden">
+          <!-- Subtle Warm Decorative Glow -->
+          <div class="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-[#FFF0EE] pointer-events-none"></div>
+
+          <div class="flex items-center justify-between relative z-10">
+            <span class="text-xs font-bold text-[#1C1D22]">Eco Streak</span>
+            <div id="ecoBadgeIcon" class="w-7 h-7 rounded-full bg-[#FFF0EE] flex items-center justify-center bolt-active">
+              <svg class="w-4 h-4 text-[#FF6B5B]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8Z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="my-1 relative z-10">
+            <div class="flex items-baseline gap-1">
+              <span id="streakCountText" class="font-display text-3xl font-extrabold text-[#1C1D22] leading-none">
+                11
+              </span>
+              <span class="text-xs font-bold text-[#FF6B5B]">Days</span>
+            </div>
+            <p class="text-[10px] font-medium text-[#6E717C] mt-1 leading-snug">
+              Under <strong class="text-[#1C1D22]">10 kWh/d</strong><br>
+              Best: <strong class="text-[#1C1D22]" id="bestStreakText">16 days</strong>
+            </p>
+          </div>
+
+          <!-- 1-Tap Eco Saver Mode Toggle -->
+          <button
+            id="ecoModeBtn"
+            onclick="toggleEcoMode()"
+            class="tap-scale w-full py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 bg-[#FFF0EE] text-[#FF6B5B] border border-[#FF6B5B]/20"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/>
+            </svg>
+            <span id="ecoModeLabel">Eco Guard</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- 4. COMPACT FORECAST & TARIFF BREAKDOWN PILLS (TAPPABLE FOR ITEMIZED BILL) -->
+      <section class="grid grid-cols-2 gap-3">
+        <!-- Projected 30-Day Bill Pill -->
+        <div onclick="openTariffModal('projected')" class="wellness-card tap-scale px-3.5 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#FFF0EE] text-[#FF6B5B] flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+              </svg>
+            </div>
+            <div>
+              <span class="text-[10px] font-semibold text-[#6E717C] block">30d Forecast</span>
+              <span class="font-display text-sm font-extrabold text-[#1C1D22]" id="pillProjectedCost">
+                ₹4,380
+              </span>
+              <span class="text-[9px] font-bold text-[#FF6B5B] block" id="pillProjectedUnits">
+                ~371 kWh · >300 Slab!
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current MSEDCL Tariff Slab Pill -->
+        <div onclick="openTariffModal('accrued')" class="wellness-card tap-scale px-3.5 py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#EDF4FF] text-[#2B7FFF] flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div>
+              <span class="text-[10px] font-semibold text-[#6E717C] block">Active Slab</span>
+              <span class="font-display text-sm font-extrabold text-[#1C1D22]" id="pillActiveSlabRate">
+                ₹10.29<span class="text-[10px] font-medium text-[#6E717C]">/u</span>
+              </span>
+              <span class="text-[9px] font-bold text-[#2B7FFF] block" id="pillActiveSlabName">
+                Slab 2 · Tap Bill
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. WEEKLY USAGE & COST BAR CHART AT BOTTOM -->
+      <section class="wellness-card p-3.5">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h2 class="font-display text-sm font-extrabold text-[#1C1D22]">Daily Energy Output</h2>
+            <p id="selectedDayDetail" class="text-[11px] font-medium text-[#2B7FFF]">
+              Mon · 9.4 kWh (₹112 est. · Peak 1,420W)
+            </p>
+          </div>
+
+          <!-- Units (kWh) vs Cost (₹) Segmented Toggle -->
+          <div class="bg-[#FAF8F5] p-0.5 rounded-xl border border-black/[0.04] flex items-center text-[10px] font-bold">
+            <button
+              id="modeKwhBtn"
+              onclick="setChartMode('kwh')"
+              class="px-2.5 py-1 rounded-lg bg-[#2B7FFF] text-white shadow-xs transition-all"
+            >
+              kWh
+            </button>
+            <button
+              id="modeCostBtn"
+              onclick="setChartMode('cost')"
+              class="px-2.5 py-1 rounded-lg text-[#6E717C] hover:text-[#1C1D22] transition-all"
+            >
+              Cost ₹
+            </button>
+          </div>
+        </div>
+
+        <!-- Electric Blue Vertical Capsule Bar Chart -->
+        <div class="relative pt-3 pb-0.5">
+          <!-- Safe Daily Budget Threshold Dashed Line -->
+          <div id="goalThresholdLine" class="absolute left-0 right-0 border-t border-dashed border-[#2B7FFF]/45 flex justify-end pointer-events-none" style="top: 38%;">
+            <span id="goalThresholdLabel" class="text-[9px] font-bold text-[#2B7FFF] bg-white px-1 -mt-2">
+              Safe 10kWh
+            </span>
+          </div>
+
+          <!-- 7 Bars Grid -->
+          <div id="energyBarsGrid" class="grid grid-cols-7 gap-2 items-end h-28 pt-2">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 6. COMPACT BOTTOM FLOATING NAVIGATION BAR -->
+    <nav class="floating-dock rounded-full px-2.5 py-2 mt-2.5 flex items-center justify-between">
+      <button onclick="selectNav(this, 'Forecast')" class="nav-item active flex items-center gap-1.5 bg-[#FF6B5B] text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-sm shadow-[#FF6B5B]/30 transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/>
+        </svg>
+        <span>Forecast</span>
+      </button>
+
+      <button onclick="openTariffModal('projected')" class="nav-item flex items-center gap-1.5 text-[#6E717C] hover:text-[#1C1D22] px-3 py-1.5 rounded-full text-xs font-semibold transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span class="hidden">Tariff Bill</span>
+      </button>
+
+      <button onclick="openSheetModal()" class="nav-item flex items-center gap-1.5 text-[#6E717C] hover:text-[#1C1D22] px-3 py-1.5 rounded-full text-xs font-semibold transition-all">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        <span class="hidden">Sheets Sync</span>
+      </button>
+
+      <button onclick="resetToDemoSheet()" class="nav-item flex items-center gap-1.5 text-[#6E717C] hover:text-[#1C1D22] px-3 py-1.5 rounded-full text-xs font-semibold transition-all" title="Reset Demo Data">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+          <path d="M3 3v5h5"></path>
+        </svg>
+        <span class="hidden">Reset</span>
+      </button>
+    </nav>
+
+    <!-- =====================================================================
+         BOTTOM SHEET MODAL 1: GOOGLE SHEETS CSV / APPS SCRIPT SYNC CONFIG
+         ===================================================================== -->
+    <div id="sheetSyncModal" class="hidden absolute inset-0 z-40 bg-black/40 backdrop-blur-[2px] flex items-end justify-center">
+      <div class="sheet-animate w-full bg-[#FAF8F5] rounded-t-[28px] p-4 shadow-2xl border-t border-white max-h-[88%] overflow-y-auto">
+        <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-3"></div>
+
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h3 class="font-display text-base font-extrabold text-[#1C1D22]">Google Sheets Live Sync</h3>
+            <p class="text-[11px] text-[#6E717C]">Connect published Sheet CSV or Apps Script JSON</p>
+          </div>
+          <button onclick="closeSheetModal()" class="w-7 h-7 rounded-full bg-white text-[#6E717C] flex items-center justify-center font-bold text-sm shadow-xs">
+            ✕
+          </button>
+        </div>
+
+        <!-- URL Input Card -->
+        <div class="wellness-card p-3 mb-3">
+          <label class="block text-[11px] font-bold text-[#1C1D22] mb-1">
+            Google Sheet CSV or Web App Endpoint URL
+          </label>
+          <input
+            id="sheetUrlInput"
+            type="url"
+            placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"
+            class="w-full text-xs bg-[#FAF8F5] border border-slate-200 rounded-xl px-3 py-2 text-[#1C1D22] focus:outline-none focus:border-[#2B7FFF]"
+          />
+          <p class="text-[10px] text-[#6E717C] mt-1.5 leading-relaxed">
+            In Google Sheets: <strong>File → Share → Publish to web → CSV</strong>. Supports columns:
+            <code class="bg-[#EDF4FF] text-[#2B7FFF] px-1 rounded">Date, Day, Units_kWh, Peak_W</code>
+          </p>
+
+          <div class="grid grid-cols-2 gap-2 mt-3">
+            <button
+              onclick="fetchFromGoogleSheet()"
+              id="fetchSheetBtn"
+              class="tap-scale bg-[#2B7FFF] hover:bg-[#1e6ee8] text-white text-xs font-bold py-2 px-3 rounded-xl shadow-sm shadow-[#2B7FFF]/25"
+            >
+              Fetch Live Sheet
+            </button>
+            <button
+              onclick="copyCsvTemplate()"
+              class="tap-scale bg-white border border-slate-200 text-[#1C1D22] text-xs font-bold py-2 px-3 rounded-xl"
+            >
+              Copy CSV Template
+            </button>
+          </div>
+        </div>
+
+        <!-- Simulated Live Google Sheet Datasets -->
+        <div class="wellness-card p-3 mb-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-[#1C1D22]">Test Sample Google Sheet Feeds</span>
+            <span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Instant Demo</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              onclick="loadPresetSheet('pune_normal')"
+              class="tap-scale text-left p-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#EDF4FF] border border-black/[0.04]"
+            >
+              <span class="text-[11px] font-bold text-[#1C1D22] block">Pune 2BHK Normal</span>
+              <span class="text-[10px] text-[#6E717C]">198 kWh · ~9.1 kWh/d</span>
+            </button>
+            <button
+              onclick="loadPresetSheet('summer_ac')"
+              class="tap-scale text-left p-2.5 rounded-xl bg-[#FAF8F5] hover:bg-[#FFF0EE] border border-black/[0.04]"
+            >
+              <span class="text-[11px] font-bold text-[#FF6B5B] block">Heavy AC Spike</span>
+              <span class="text-[10px] text-[#6E717C]">268 kWh · Slab Breach!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Sheet Row Preview -->
+        <div class="wellness-card p-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-[#1C1D22]">Synced Sheet Rows (Last 7 Days)</span>
+            <span id="sheetSourceBadge" class="text-[10px] font-bold text-[#2B7FFF]">ESP32_Pune_Meter_01</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-[10px]">
+              <thead>
+                <tr class="text-[#6E717C] border-b border-slate-100">
+                  <th class="py-1">Date</th>
+                  <th class="py-1">Day</th>
+                  <th class="py-1">Units_kWh</th>
+                  <th class="py-1">Peak_W</th>
+                  <th class="py-1 text-right">Est. ₹</th>
+                </tr>
+              </thead>
+              <tbody id="sheetPreviewTableBody" class="divide-y divide-slate-50 font-medium text-[#1C1D22]">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         BOTTOM SHEET MODAL 2: ITEMIZED MSEDCL LT-1 TARIFF BREAKDOWN
+         ===================================================================== -->
+    <div id="tariffModal" class="hidden absolute inset-0 z-40 bg-black/40 backdrop-blur-[2px] flex items-end justify-center">
+      <div class="sheet-animate w-full bg-[#FAF8F5] rounded-t-[28px] p-4 shadow-2xl border-t border-white max-h-[88%] overflow-y-auto">
+        <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-3"></div>
+
+        <div class="flex items-center justify-between mb-2.5">
+          <div>
+            <h3 class="font-display text-base font-extrabold text-[#1C1D22]">MSEDCL LT-1 Bill Breakdown</h3>
+            <p class="text-[11px] text-[#6E717C]">Residential Telescopic Tariff · Single Phase</p>
+          </div>
+          <button onclick="closeTariffModal()" class="w-7 h-7 rounded-full bg-white text-[#6E717C] flex items-center justify-center font-bold text-sm shadow-xs">
+            ✕
+          </button>
+        </div>
+
+        <!-- Accrued vs Projected Toggle -->
+        <div class="bg-white p-1 rounded-2xl border border-black/[0.04] grid grid-cols-2 gap-1 mb-3">
+          <button
+            id="billTabAccrued"
+            onclick="switchBillBreakdownMode('accrued')"
+            class="py-1.5 rounded-xl text-xs font-bold bg-[#FF6B5B] text-white transition-all"
+          >
+            Accrued (<span id="tabAccruedUnits">198</span> kWh)
+          </button>
+          <button
+            id="billTabProjected"
+            onclick="switchBillBreakdownMode('projected')"
+            class="py-1.5 rounded-xl text-xs font-bold text-[#6E717C] transition-all"
+          >
+            30d Projected (<span id="tabProjectedUnits">371</span> kWh)
+          </button>
+        </div>
+
+        <!-- Itemized Receipt Card -->
+        <div class="wellness-card p-3.5 space-y-2 text-xs">
+          <div class="flex justify-between text-[#6E717C]">
+            <span>Slab 1 (0–100 u @ ₹4.71)</span>
+            <span class="font-bold text-[#1C1D22]" id="lineSlab1">₹471.00</span>
+          </div>
+          <div class="flex justify-between text-[#6E717C]">
+            <span>Slab 2 (101–300 u @ ₹10.29)</span>
+            <span class="font-bold text-[#1C1D22]" id="lineSlab2">₹1,008.42</span>
+          </div>
+          <div class="flex justify-between text-[#6E717C]">
+            <span>Slab 3 (301–500 u @ ₹14.55)</span>
+            <span class="font-bold text-[#1C1D22]" id="lineSlab3">₹0.00</span>
+          </div>
+          <div class="flex justify-between text-[#6E717C]">
+            <span>Slab 4 (&gt;500 u @ ₹16.64)</span>
+            <span class="font-bold text-[#1C1D22]" id="lineSlab4">₹0.00</span>
+          </div>
+
+          <div class="border-t border-dashed border-slate-200 my-1.5 pt-1.5 space-y-1.5">
+            <div class="flex justify-between text-[#6E717C]">
+              <span>Fixed Charge (1-Phase)</span>
+              <span class="font-bold text-[#1C1D22]" id="lineFixed">₹128.00</span>
+            </div>
+            <div class="flex justify-between text-[#6E717C]">
+              <span>Wheeling Charge (₹1.17/u)</span>
+              <span class="font-bold text-[#1C1D22]" id="lineWheeling">₹231.66</span>
+            </div>
+            <div class="flex justify-between text-[#6E717C]">
+              <span>Fuel Adjustment FAC (₹0.65/u)</span>
+              <span class="font-bold text-[#1C1D22]" id="lineFac">₹128.70</span>
+            </div>
+            <div class="flex justify-between text-[#6E717C]">
+              <span>Maharashtra Elec. Duty (16%)</span>
+              <span class="font-bold text-[#1C1D22]" id="lineDuty">₹314.84</span>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-200 pt-2.5 flex items-center justify-between">
+            <span class="font-display text-sm font-extrabold text-[#1C1D22]">Total Payable</span>
+            <span class="font-display text-lg font-extrabold text-[#FF6B5B]" id="lineGrandTotal">₹2,283</span>
+          </div>
+        </div>
+
+        <!-- Smart Slab Saving Tip -->
+        <div id="slabAdviceBox" class="mt-3 p-3 rounded-2xl bg-[#EDF4FF] text-[#1C1D22] text-[11px] leading-relaxed">
+          <strong class="text-[#2B7FFF]">Smart Forecast Insight:</strong> Keep daily usage below <strong>7.3 kWh/day</strong> for the remaining 14 days to stay under 300 units and save <strong>₹640+</strong> in Slab 3 charges.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // VOLTFLOW SMART ENERGY BILL FORECASTER — MSEDCL LT-1 + GOOGLE SHEETS SYNC
+    // =========================================================================
+
+    const PRESET_DATASETS = {
+      pune_normal: {
+        sourceName: 'ESP32_Pune_Meter_01',
+        cycleDay: 16,
+        totalCycleDays: 30,
+        priorCycleUnits: 134.6, // Units accrued prior to this 7-day window
+        streak: 11,
+        bestStreak: 16,
+        days: [
+          { date: '2026-11-10', day: 'Mon', kwh: 9.4, peakW: 1420 },
+          { date: '2026-11-11', day: 'Tue', kwh: 8.8, peakW: 1290 },
+          { date: '2026-11-12', day: 'Wed', kwh: 9.6, peakW: 1580 },
+          { date: '2026-11-13', day: 'Thu', kwh: 10.9, peakW: 2110 },
+          { date: '2026-11-14', day: 'Fri', kwh: 8.5, peakW: 1190 },
+          { date: '2026-11-15', day: 'Sat', kwh: 9.2, peakW: 1340 },
+          { date: '2026-11-16', day: 'Sun', kwh: 7.0, peakW: 1080 }
+        ]
+      },
+      summer_ac: {
+        sourceName: 'Pune_2BHK_AC_Feed',
+        cycleDay: 16,
+        totalCycleDays: 30,
+        priorCycleUnits: 182.0,
+        streak: 2,
+        bestStreak: 16,
+        days: [
+          { date: '2026-11-10', day: 'Mon', kwh: 12.4, peakW: 2450 },
+          { date: '2026-11-11', day: 'Tue', kwh: 13.1, peakW: 2610 },
+          { date: '2026-11-12', day: 'Wed', kwh: 11.8, peakW: 2290 },
+          { date: '2026-11-13', day: 'Thu', kwh: 14.2, peakW: 2780 },
+          { date: '2026-11-14', day: 'Fri', kwh: 12.9, peakW: 2510 },
+          { date: '2026-11-15', day: 'Sat', kwh: 11.6, peakW: 2180 },
+          { date: '2026-11-16', day: 'Sun', kwh: 10.0, peakW: 1940 }
+        ]
+      }
+    };
+
+    const appState = {
+      sourceName: PRESET_DATASETS.pune_normal.sourceName,
+      cycleDay: 16,
+      totalCycleDays: 30,
+      priorCycleUnits: 134.6,
+      days: JSON.parse(JSON.stringify(PRESET_DATASETS.pune_normal.days)),
+      selectedDayIndex: 0,
+      streak: 11,
+      bestStreak: 16,
+      ecoGuardActive: false,
+      chartMode: 'kwh', // 'kwh' | 'cost'
+      billModalMode: 'projected',
+      safeMonthlyTarget: 300, // Safe slab ceiling before ₹14.55/u jump
+      safeDailyBudget: 10.0
+    };
+
+    const RING_CIRCUMFERENCE = 2 * Math.PI * 48; // ~301.59
+    let toastTimer = null;
+
+    // -------------------------------------------------------------------------
+    // MSEDCL LT-1 RESIDENTIAL TELESCOPIC TARIFF ENGINE
+    // -------------------------------------------------------------------------
+    function calculateMSEDCLBill(units) {
+      const u = Math.max(0, Number(units) || 0);
+
+      // Telescopic Energy Charges
+      const s1Units = Math.min(u, 100);
+      const s2Units = Math.min(Math.max(u - 100, 0), 200);
+      const s3Units = Math.min(Math.max(u - 300, 0), 200);
+      const s4Units = Math.max(u - 500, 0);
+
+      const s1Cost = s1Units * 4.71;
+      const s2Cost = s2Units * 10.29;
+      const s3Cost = s3Units * 14.55;
+      const s4Cost = s4Units * 16.64;
+
+      const energyCharge = s1Cost + s2Cost + s3Cost + s4Cost;
+      const fixedCharge = 128.0; // Single-Phase LT-1 Residential
+      const wheelingCharge = u * 1.17;
+      const facCharge = u * 0.65;
+
+      const subTotal = energyCharge + fixedCharge + wheelingCharge + facCharge;
+      const electricityDuty = subTotal * 0.16; // 16% Maharashtra Govt Duty
+      const total = subTotal + electricityDuty;
+
+      // Determine active marginal slab
+      let activeSlabName = 'Slab 1';
+      let activeSlabRate = 4.71;
+      if (u > 500) {
+        activeSlabName = 'Slab 4';
+        activeSlabRate = 16.64;
+      } else if (u > 300) {
+        activeSlabName = 'Slab 3';
+        activeSlabRate = 14.55;
+      } else if (u > 100) {
+        activeSlabName = 'Slab 2';
+        activeSlabRate = 10.29;
+      }
+
+      return {
+        units: u,
+        s1Cost,
+        s2Cost,
+        s3Cost,
+        s4Cost,
+        energyCharge,
+        fixedCharge,
+        wheelingCharge,
+        facCharge,
+        electricityDuty,
+        total,
+        activeSlabName,
+        activeSlabRate
+      };
+    }
+
+    // Marginal daily cost estimate based on current accrued tariff slab
+    function estimateDailyCost(dayKwh, marginalRate) {
+      const effectivePerUnit = marginalRate + 1.17 + 0.65;
+      return dayKwh * effectivePerUnit * 1.16;
+    }
+
+    function getAccruedUnits() {
+      const weekSum = appState.days.reduce((sum, d) => sum + d.kwh, 0);
+      return Number((appState.priorCycleUnits + weekSum).toFixed(1));
+    }
+
+    function getProjectedUnits() {
+      const accrued = getAccruedUnits();
+      const dailyAvg = accrued / Math.max(1, appState.cycleDay);
+      const remainingDays = Math.max(0, appState.totalCycleDays - appState.cycleDay);
+      // If Eco Guard is toggled on, forecast assumes 15% daily reduction for remaining days
+      const effectiveRemainingAvg = appState.ecoGuardActive ? dailyAvg * 0.85 : dailyAvg;
+      return Number((accrued + effectiveRemainingAvg * remainingDays).toFixed(0));
+    }
+
+    // -------------------------------------------------------------------------
+    // UI TOAST & MODALS
+    // -------------------------------------------------------------------------
+    function showToast(msg) {
+      const toast = document.getElementById('feedbackToast');
+      const text = document.getElementById('toastMessage');
+      text.textContent = msg;
+      toast.classList.remove('hidden', 'toast-pop');
+      void toast.offsetWidth;
+      toast.classList.add('toast-pop');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 2400);
+    }
+
+    function openSheetModal() {
+      renderSheetPreviewTable();
+      document.getElementById('sheetSyncModal').classList.remove('hidden');
+    }
+
+    function closeSheetModal() {
+      document.getElementById('sheetSyncModal').classList.add('hidden');
+    }
+
+    function openTariffModal(mode = 'projected') {
+      appState.billModalMode = mode;
+      renderTariffModal();
+      document.getElementById('tariffModal').classList.remove('hidden');
+    }
+
+    function closeTariffModal() {
+      document.getElementById('tariffModal').classList.add('hidden');
+    }
+
+    function switchBillBreakdownMode(mode) {
+      appState.billModalMode = mode;
+      renderTariffModal();
+    }
+
+    // -------------------------------------------------------------------------
+    // GOOGLE SHEETS CSV / APPS SCRIPT JSON PARSER & FETCH
+    // -------------------------------------------------------------------------
+    function parseSheetTextToDays(rawText) {
+      const trimmed = rawText.trim();
+
+      // 1. Try JSON (Apps Script Web App Endpoint)
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        const json = JSON.parse(trimmed);
+        const rows = Array.isArray(json) ? json : (json.data || json.rows || []);
+        if (!rows.length) throw new Error('Empty JSON array');
+
+        return rows.slice(-7).map((r, idx) => {
+          const kwhVal = parseFloat(r.Units_kWh ?? r.units_kwh ?? r.kWh ?? r.kwh ?? r.Units ?? 0);
+          const peakVal = parseInt(r.Peak_W ?? r.peak_w ?? r.Peak ?? 1350, 10);
+          const dateStr = String(r.Date ?? r.date ?? `2026-11-${10 + idx}`);
+          const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          const dayStr = String(r.Day ?? r.day ?? dayNames[idx % 7]).slice(0, 3);
+          return {
+            date: dateStr,
+            day: dayStr,
+            kwh: isNaN(kwhVal) ? 8.5 : Number(kwhVal.toFixed(1)),
+            peakW: isNaN(peakVal) ? 1350 : peakVal
+          };
+        });
+      }
+
+      // 2. Parse CSV (Published Google Sheet ?output=csv)
+      const lines = trimmed.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length < 2) throw new Error('CSV needs header and data rows');
+
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim().toLowerCase());
+      const dateIdx = headers.findIndex(h => h.includes('date'));
+      const dayIdx = headers.findIndex(h => h === 'day' || h.includes('weekday'));
+      const kwhIdx = headers.findIndex(h => h.includes('kwh') || h.includes('unit'));
+      const peakIdx = headers.findIndex(h => h.includes('peak') || h.includes('watt') || h === 'w');
+
+      if (kwhIdx === -1) {
+        throw new Error('Could not find Units_kWh or kWh column');
+      }
+
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const dataLines = lines.slice(1).slice(-7);
+
+      return dataLines.map((line, idx) => {
+        const cols = line.split(',').map(c => c.replace(/"/g, '').trim());
+        const kwhVal = parseFloat(cols[kwhIdx]);
+        const peakVal = peakIdx !== -1 ? parseInt(cols[peakIdx], 10) : 1380;
+        const dateStr = dateIdx !== -1 && cols[dateIdx] ? cols[dateIdx] : `2026-11-${10 + idx}`;
+        const dayStr = dayIdx !== -1 && cols[dayIdx] ? cols[dayIdx].slice(0, 3) : dayNames[idx % 7];
+
+        return {
+          date: dateStr,
+          day: dayStr,
+          kwh: isNaN(kwhVal) ? 8.0 : Number(kwhVal.toFixed(1)),
+          peakW: isNaN(peakVal) ? 1380 : peakVal
+        };
+      });
+    }
+
+    async function fetchFromGoogleSheet() {
+      const urlInput = document.getElementById('sheetUrlInput').value.trim();
+      if (!urlInput) {
+        showToast('Paste a Google Sheet CSV URL first');
+        return;
+      }
+
+      const btn = document.getElementById('fetchSheetBtn');
+      btn.textContent = 'Syncing...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(urlInput);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        const parsedDays = parseSheetTextToDays(text);
+
+        if (parsedDays.length > 0) {
+          appState.days = parsedDays;
+          appState.sourceName = 'Live_Google_Sheet';
+          appState.selectedDayIndex = parsedDays.length - 1;
+          document.getElementById('syncStatusText').textContent = 'Google Sheet · Synced just now';
+          updateDashboardUI();
+          renderSheetPreviewTable();
+          showToast(`Synced ${parsedDays.length} rows from Google Sheet!`);
+          closeSheetModal();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('CORS/URL error — verify "Publish to web (CSV)"');
+      } finally {
+        btn.textContent = 'Fetch Live Sheet';
+        btn.disabled = false;
+      }
+    }
+
+    function loadPresetSheet(presetKey) {
+      const preset = PRESET_DATASETS[presetKey];
+      if (!preset) return;
+
+      appState.sourceName = preset.sourceName;
+      appState.cycleDay = preset.cycleDay;
+      appState.totalCycleDays = preset.totalCycleDays;
+      appState.priorCycleUnits = preset.priorCycleUnits;
+      appState.streak = preset.streak;
+      appState.bestStreak = preset.bestStreak;
+      appState.days = JSON.parse(JSON.stringify(preset.days));
+      appState.selectedDayIndex = 0;
+
+      document.getElementById('syncStatusText').textContent = `${preset.sourceName} · Synced now`;
+      updateDashboardUI();
+      renderSheetPreviewTable();
+      showToast(`Loaded "${preset.sourceName}" feed`);
+      closeSheetModal();
+    }
+
+    function triggerQuickSync() {
+      const icon = document.getElementById('syncSpinIcon');
+      icon.style.transform = 'rotate(360deg)';
+      setTimeout(() => {
+        icon.style.transform = 'rotate(0deg)';
+      }, 550);
+
+      const urlInput = document.getElementById('sheetUrlInput').value.trim();
+      if (urlInput) {
+        fetchFromGoogleSheet();
+      } else {
+        document.getElementById('syncStatusText').textContent = 'Google Sheet · Synced just now';
+        showToast('Sheet telemetry verified & up to date');
+      }
+    }
+
+    function copyCsvTemplate() {
+      const sampleCsv = [
+        'Date,Day,Units_kWh,Peak_W',
+        '2026-11-10,Mon,9.4,1420',
+        '2026-11-11,Tue,8.8,1290',
+        '2026-11-12,Wed,9.6,1580',
+        '2026-11-13,Thu,10.9,2110',
+        '2026-11-14,Fri,8.5,1190',
+        '2026-11-15,Sat,9.2,1340',
+        '2026-11-16,Sun,7.0,1080'
+      ].join('\n');
+
+      const textarea = document.createElement('textarea');
+      textarea.value = sampleCsv;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      showToast('Copied Google Sheet CSV template!');
+    }
+// -------------------------------------------------------------------------
+    // RENDERERS
+    // -------------------------------------------------------------------------
+    function renderDaySelector() {
+      const container = document.getElementById('daySelectorRow');
+      container.innerHTML = appState.days.map((item, idx) => {
+        const isSelected = idx === appState.selectedDayIndex;
+        const underBudget = item.kwh <= appState.safeDailyBudget;
+
+        const pillClasses = isSelected
+          ? 'bg-[#FF6B5B] text-white shadow-md shadow-[#FF6B5B]/25 scale-[1.03]'
+          : 'bg-[#FAF8F5] text-[#1C1D22] hover:bg-[#F2EFE9]';
+        const subTextClass = isSelected ? 'text-white/85' : 'text-[#6E717C]';
+        const dotColor = isSelected
+          ? 'bg-white'
+          : underBudget
+            ? 'bg-[#2B7FFF]'
+            : 'bg-[#FF6B5B]';
+
+        return `
+          <button
+            onclick="selectDay(${idx})"
+            class="tap-scale rounded-2xl py-1.5 px-1 flex flex-col items-center justify-center transition-all ${pillClasses}"
+          >
+            <span class="text-[10px] font-semibold ${subTextClass}">${item.day}</span>
+            <span class="font-display text-xs font-extrabold my-0.5">${item.kwh.toFixed(1)}</span>
+            <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderEnergyBars() {
+      const grid = document.getElementById('energyBarsGrid');
+      const accruedBill = calculateMSEDCLBill(getAccruedUnits());
+      const isKwh = appState.chartMode === 'kwh';
+
+      const values = appState.days.map(d =>
+        isKwh ? d.kwh : Math.round(estimateDailyCost(d.kwh, accruedBill.activeSlabRate))
+      );
+
+      const safeThresholdVal = isKwh
+        ? appState.safeDailyBudget
+        : Math.round(estimateDailyCost(appState.safeDailyBudget, accruedBill.activeSlabRate));
+
+      const maxVal = Math.max(...values, safeThresholdVal) * 1.2;
+
+      const thresholdLabel = document.getElementById('goalThresholdLabel');
+      const thresholdLine = document.getElementById('goalThresholdLine');
+      thresholdLabel.textContent = isKwh ? `Safe ${appState.safeDailyBudget}kWh` : `Safe ₹${safeThresholdVal}`;
+      const lineTopPct = Math.max(8, Math.min(88, 100 - (safeThresholdVal / maxVal) * 100));
+      thresholdLine.style.top = `${lineTopPct}%`;
+
+      grid.innerHTML = appState.days.map((item, idx) => {
+        const val = values[idx];
+        const pct = Math.min(100, Math.max(14, Math.round((val / maxVal) * 100)));
+        const isSelected = idx === appState.selectedDayIndex;
+        const exceedsDailySafe = item.kwh > appState.safeDailyBudget;
+
+        let barStyle = 'background: #DCE9FF;';
+        if (isSelected) {
+          barStyle = 'background: linear-gradient(180deg, #2B7FFF 0%, #1A62D6 100%); box-shadow: 0 6px 14px -2px rgba(43, 127, 255, 0.45);';
+        } else if (exceedsDailySafe) {
+          barStyle = 'background: #FFD6D1;';
+        }
+
+        const labelColor = isSelected ? 'text-[#2B7FFF] font-extrabold' : 'text-[#6E717C] font-semibold';
+
+        return `
+          <div onclick="selectDay(${idx})" class="flex flex-col items-center h-full justify-end cursor-pointer group">
+            <span class="text-[9px] font-bold mb-1 ${isSelected ? 'text-[#2B7FFF]' : 'text-transparent group-hover:text-[#6E717C]'} transition-colors">
+              ${isKwh ? val.toFixed(1) : '₹' + val}
+            </span>
+            <div class="w-full max-w-[26px] h-20 bg-[#FAF8F5] rounded-full flex items-end p-0.5 overflow-hidden">
+              <div
+                class="bar-fill w-full rounded-full"
+                style="height: ${pct}%; ${barStyle}"
+              ></div>
+            </div>
+            <span class="text-[10px] mt-1.5 ${labelColor}">${item.day}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSheetPreviewTable() {
+      const accruedBill = calculateMSEDCLBill(getAccruedUnits());
+      document.getElementById('sheetSourceBadge').textContent = appState.sourceName;
+
+      const tbody = document.getElementById('sheetPreviewTableBody');
+      tbody.innerHTML = appState.days.map(d => {
+        const estCost = Math.round(estimateDailyCost(d.kwh, accruedBill.activeSlabRate));
+        return `
+          <tr>
+            <td class="py-1.5 text-[#6E717C]">${d.date}</td>
+            <td class="py-1.5 font-bold">${d.day}</td>
+            <td class="py-1.5 font-bold text-[#2B7FFF]">${d.kwh.toFixed(1)}</td>
+            <td class="py-1.5 text-[#6E717C]">${d.peakW}W</td>
+            <td class="py-1.5 text-right font-bold">₹${estCost}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderTariffModal() {
+      const accruedUnits = getAccruedUnits();
+      const projectedUnits = getProjectedUnits();
+
+      document.getElementById('tabAccruedUnits').textContent = accruedUnits.toFixed(0);
+      document.getElementById('tabProjectedUnits').textContent = projectedUnits;
+
+      const accBtn = document.getElementById('billTabAccrued');
+      const projBtn = document.getElementById('billTabProjected');
+
+      if (appState.billModalMode === 'accrued') {
+        accBtn.className = 'py-1.5 rounded-xl text-xs font-bold bg-[#FF6B5B] text-white transition-all';
+        projBtn.className = 'py-1.5 rounded-xl text-xs font-bold text-[#6E717C] transition-all';
+      } else {
+        projBtn.className = 'py-1.5 rounded-xl text-xs font-bold bg-[#FF6B5B] text-white transition-all';
+        accBtn.className = 'py-1.5 rounded-xl text-xs font-bold text-[#6E717C] transition-all';
+      }
+
+      const targetUnits = appState.billModalMode === 'accrued' ? accruedUnits : projectedUnits;
+      const bill = calculateMSEDCLBill(targetUnits);
+
+      document.getElementById('lineSlab1').textContent = `₹${bill.s1Cost.toFixed(2)}`;
+      document.getElementById('lineSlab2').textContent = `₹${bill.s2Cost.toFixed(2)}`;
+      document.getElementById('lineSlab3').textContent = `₹${bill.s3Cost.toFixed(2)}`;
+      document.getElementById('lineSlab4').textContent = `₹${bill.s4Cost.toFixed(2)}`;
+      document.getElementById('lineFixed').textContent = `₹${bill.fixedCharge.toFixed(2)}`;
+      document.getElementById('lineWheeling').textContent = `₹${bill.wheelingCharge.toFixed(2)}`;
+      document.getElementById('lineFac').textContent = `₹${bill.facCharge.toFixed(2)}`;
+      document.getElementById('lineDuty').textContent = `₹${bill.electricityDuty.toFixed(2)}`;
+      document.getElementById('lineGrandTotal').textContent = `₹${Math.round(bill.total).toLocaleString('en-IN')}`;
+
+      const remainingDays = Math.max(1, appState.totalCycleDays - appState.cycleDay);
+      const safeAllowance = Math.max(0, (300 - accruedUnits) / remainingDays).toFixed(1);
+      const adviceBox = document.getElementById('slabAdviceBox');
+
+      if (projectedUnits > 300) {
+        adviceBox.innerHTML = `<strong class="text-[#FF6B5B]">Slab 3 Breach Alert:</strong> Projected usage (${projectedUnits} kWh) crosses the 300-unit mark. Keep daily consumption under <strong>${safeAllowance} kWh/day</strong> for the remaining ${remainingDays} days to avoid the ₹14.55/unit slab.`;
+      } else {
+        adviceBox.innerHTML = `<strong class="text-[#2B7FFF]">On Track for Safe Slab:</strong> You are projected to finish at <strong>${projectedUnits} kWh</strong>, safely within Slab 2 (≤300 units).`;
+      }
+    }
+
+    function updateDashboardUI() {
+      const accruedUnits = getAccruedUnits();
+      const projectedUnits = getProjectedUnits();
+      const accruedBill = calculateMSEDCLBill(accruedUnits);
+      const projectedBill = calculateMSEDCLBill(projectedUnits);
+      const selectedDay = appState.days[appState.selectedDayIndex] || appState.days[0];
+
+      // Header Cycle & Weekly Summary
+      document.getElementById('cycleDayText').textContent = appState.cycleDay;
+      const weekTotal = appState.days.reduce((s, d) => s + d.kwh, 0).toFixed(1);
+      document.getElementById('weeklySummaryMetric').textContent = `${weekTotal} kWh this wk • Pune LT-1`;
+
+      // Left Hero Card: Circular Ring Progress (Accrued kWh vs 300 kWh Safe Slab Limit)
+      const pct = Math.min(100, Math.round((accruedUnits / appState.safeMonthlyTarget) * 100));
+      const offset = RING_CIRCUMFERENCE - (pct / 100) * RING_CIRCUMFERENCE;
+      document.getElementById('unitsRingArc').style.strokeDashoffset = offset.toFixed(2);
+      document.getElementById('accruedUnitsText').textContent = accruedUnits.toFixed(0);
+      document.getElementById('safeLimitUnitsText').textContent = appState.safeMonthlyTarget;
+      document.getElementById('slabBudgetPct').textContent = `${pct}%`;
+      document.getElementById('accruedBillBadge').textContent = `₹${Math.round(accruedBill.total).toLocaleString('en-IN')} so far`;
+      document.getElementById('miniProjectedBill').textContent = `₹${Math.round(projectedBill.total).toLocaleString('en-IN')}`;
+
+      // Right Hero Card: Eco-Saving Streak & Eco Guard Button
+      document.getElementById('streakCountText').textContent = appState.streak;
+      document.getElementById('bestStreakText').textContent = `${appState.bestStreak} days`;
+
+      const ecoBtn = document.getElementById('ecoModeBtn');
+      const ecoLabel = document.getElementById('ecoModeLabel');
+      if (appState.ecoGuardActive) {
+        ecoBtn.className = 'tap-scale w-full py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 bg-[#FF6B5B] text-white shadow-sm shadow-[#FF6B5B]/30';
+        ecoLabel.textContent = 'Eco Active (-15%)';
+      } else {
+        ecoBtn.className = 'tap-scale w-full py-2 px-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 bg-[#FFF0EE] text-[#FF6B5B] border border-[#FF6B5B]/20';
+        ecoLabel.textContent = 'Eco Guard';
+      }
+
+      // Forecast & Tariff Pills
+      document.getElementById('pillProjectedCost').textContent = `₹${Math.round(projectedBill.total).toLocaleString('en-IN')}`;
+      const projNote = document.getElementById('pillProjectedUnits');
+      if (projectedUnits > 300) {
+        projNote.textContent = `~${projectedUnits} kWh · >300 Slab!`;
+        projNote.className = 'text-[9px] font-bold text-[#FF6B5B] block';
+      } else {
+        projNote.textContent = `~${projectedUnits} kWh · Safe Slab`;
+        projNote.className = 'text-[9px] font-bold text-emerald-600 block';
+      }
+
+      document.getElementById('pillActiveSlabRate').innerHTML = `₹${accruedBill.activeSlabRate.toFixed(2)}<span class="text-[10px] font-medium text-[#6E717C]">/u</span>`;
+      document.getElementById('pillActiveSlabName').textContent = `${accruedBill.activeSlabName} · Tap Bill`;
+
+      // Selected Day Caption above Bar Chart
+      const selectedEstCost = Math.round(estimateDailyCost(selectedDay.kwh, accruedBill.activeSlabRate));
+      document.getElementById('selectedDayDetail').textContent =
+        `${selectedDay.day} · ${selectedDay.kwh.toFixed(1)} kWh (₹${selectedEstCost} est. · Peak ${selectedDay.peakW.toLocaleString()}W)`;
+
+      renderDaySelector();
+      renderEnergyBars();
+    }
+
+    // -------------------------------------------------------------------------
+    // USER INTERACTIONS
+    // -------------------------------------------------------------------------
+    function selectDay(index) {
+      appState.selectedDayIndex = index;
+      updateDashboardUI();
+    }
+
+    function logTestUnits() {
+      const targetDay = appState.days[appState.selectedDayIndex];
+      targetDay.kwh = Number((targetDay.kwh + 2.0).toFixed(1));
+      targetDay.peakW = Math.min(3500, targetDay.peakW + 240);
+      updateDashboardUI();
+      showToast(`Logged +2.0 kWh on ${targetDay.day} (${targetDay.kwh} kWh)`);
+    }
+
+    function toggleEcoMode() {
+      appState.ecoGuardActive = !appState.ecoGuardActive;
+      if (appState.ecoGuardActive) {
+        appState.streak += 1;
+        if (appState.streak > appState.bestStreak) appState.bestStreak = appState.streak;
+        showToast('Eco Guard ON: Forecasting 15% lower daily load');
+      } else {
+        appState.streak = Math.max(0, appState.streak - 1);
+        showToast('Eco Guard paused — baseline forecast restored');
+      }
+      updateDashboardUI();
+    }
+
+    function setChartMode(mode) {
+      appState.chartMode = mode;
+      const kwhBtn = document.getElementById('modeKwhBtn');
+      const costBtn = document.getElementById('modeCostBtn');
+
+      if (mode === 'kwh') {
+        kwhBtn.className = 'px-2.5 py-1 rounded-lg bg-[#2B7FFF] text-white shadow-xs transition-all';
+        costBtn.className = 'px-2.5 py-1 rounded-lg text-[#6E717C] hover:text-[#1C1D22] transition-all';
+      } else {
+        costBtn.className = 'px-2.5 py-1 rounded-lg bg-[#2B7FFF] text-white shadow-xs transition-all';
+        kwhBtn.className = 'px-2.5 py-1 rounded-lg text-[#6E717C] hover:text-[#1C1D22] transition-all';
+      }
+      renderEnergyBars();
+    }
+
+    function resetToDemoSheet() {
+      loadPresetSheet('pune_normal');
+    }
+
+    function selectNav(btn, label) {
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.className = 'nav-item flex items-center gap-1.5 text-[#6E717C] hover:text-[#1C1D22] px-3 py-1.5 rounded-full text-xs font-semibold transition-all';
+        const span = el.querySelector('span');
+        if (span) span.classList.add('hidden');
+      });
+
+      btn.className = 'nav-item active flex items-center gap-1.5 bg-[#FF6B5B] text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-sm shadow-[#FF6B5B]/30 transition-all';
+      const activeSpan = btn.querySelector('span');
+      if (activeSpan) activeSpan.classList.remove('hidden');
+    }
+
+    window.onload = function () {
+      updateDashboardUI();
+    };
+  </script>
+</body>
+</html>
